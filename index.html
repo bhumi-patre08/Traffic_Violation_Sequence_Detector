@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Violation Sequence Detector | DFA Simulator & Cyber Control Room</title>
+    <meta name="description" content="Interactive Deterministic Finite Automaton (DFA) educational simulator modeling traffic violation sequence detection with real-time road visualizer and formal theory breakdown.">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+    <!-- Canvas Background & Particle Effects -->
+    <canvas id="bg-canvas"></canvas>
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Violation Alert Fullscreen Banner (Hidden by default) -->
+    <div id="violation-overlay" class="violation-overlay hidden">
+        <div class="overlay-content">
+            <div class="siren-light"></div>
+            <h2 class="alert-title">🚨 TRAFFIC VIOLATION DETECTED 🚨</h2>
+            <p class="alert-subtitle">Sequence Matched: <span id="overlay-seq-text">Red Light → Speeding → No Helmet</span></p>
+            <div class="violation-badge">ACCEPTED STATE (q3) REACHED</div>
+            <button id="dismiss-overlay-btn" class="btn btn-alert">Dismiss Alert</button>
+        </div>
+    </div>
+
+    <div class="app-wrapper">
+        <!-- Header / Control Center Navigation -->
+        <header class="main-header">
+            <div class="header-container">
+                <div class="brand">
+                    <span class="project-tag">Theory of Computation Lab</span>
+                    <h1 class="main-title">Traffic Violation Sequence Detector</h1>
+                    <p class="subtitle">Deterministic Finite Automaton (DFA) Interactive Simulator & Cyber Command Center</p>
+                </div>
+                <div class="header-controls">
+                    <button id="sound-toggle-btn" class="btn-icon" title="Toggle Sound FX">
+                        <span id="sound-icon">🔊</span> Sound On
+                    </button>
+                    <button id="help-modal-btn" class="btn btn-secondary">
+                        <span>❓</span> How to Use
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Dashboard Layout -->
+        <main class="container">
+
+            <!-- Top Master Control Bar -->
+            <section class="controls-bar glass-panel" aria-label="Simulation Execution Controls">
+                <div class="control-group-left">
+                    <div class="btn-group">
+                        <button class="btn btn-primary" id="start-btn">
+                            <span class="btn-icon-symbol">▶</span> Run Target Violation
+                        </button>
+                        <button class="btn btn-secondary" id="step-btn">
+                            <span class="btn-icon-symbol">⏭</span> Step Forward
+                        </button>
+                        <button class="btn btn-secondary" id="reset-btn">
+                            <span class="btn-icon-symbol">↺</span> Reset
+                        </button>
+                    </div>
+                </div>
+
+                <div class="control-group-center">
+                    <div class="pattern-selector">
+                        <label for="pattern-select" class="control-label">Target Pattern:</label>
+                        <select id="pattern-select" class="cyber-select">
+                            <option value="red_speed_helmet" selected>1. 🏍️ Red Light (R) → Speeding (S) → No Helmet (H) [Two-Wheeler]</option>
+                            <option value="stop_uturn">2. 🚗 Stop Sign (T) → Illegal U-Turn (U) [Four-Wheeler]</option>
+                            <option value="speed_weaving">3. 🚗 Speeding (S) → Lane Weaving (W) → Tailgating (G) [Four-Wheeler]</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-group-right">
+                    <div class="speed-control">
+                        <label for="speed-select" class="control-label">Speed:</label>
+                        <select id="speed-select" class="cyber-select">
+                            <option value="2000">0.5x Slow</option>
+                            <option value="1200" selected>1.0x Normal</option>
+                            <option value="600">2.0x Fast</option>
+                            <option value="300">4.0x Turbo</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Dashboard Grid -->
+            <div class="dashboard-grid">
+
+                <!-- 1. Road Traffic Simulation Scene -->
+                <section class="glass-panel road-section" aria-label="Road Traffic Simulation">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span class="title-icon">🚦</span> Cyber Traffic Monitor Scene
+                        </div>
+                        <div class="traffic-stats">
+                            <span class="stat-badge">Speed Radar: <strong id="speedometer">45km/h</strong></span>
+                            <span class="stat-badge">Plate: <strong id="plate-number">REG-7890</strong></span>
+                        </div>
+                    </div>
+
+                    <div class="road-container" id="road-container">
+                        <div class="event-banner" id="event-banner">
+                            <span class="pulse-dot"></span>
+                            <span id="event-banner-text">STATUS: MONITORING TRAFFIC FLOW</span>
+                        </div>
+                        
+                        <!-- CCTV & Scanning Laser -->
+                        <div class="cctv-camera">
+                            <div class="cctv-lens"></div>
+                            <div class="cctv-laser" id="cctv-laser"></div>
+                        </div>
+
+                        <!-- Traffic Lights & Sky -->
+                        <div class="sky-elements">
+                            <div class="traffic-light">
+                                <div class="light red" id="light-red" title="Red Light (R)"></div>
+                                <div class="light yellow" id="light-yellow" title="Yellow Light"></div>
+                                <div class="light green active" id="light-green" title="Green Light"></div>
+                            </div>
+                        </div>
+
+                        <!-- Road Tracks -->
+                        <div class="road" id="road-element">
+                            <div class="lane-markings"></div>
+                            <div class="median-line"></div>
+                            <div class="speed-limit-sign" id="speed-limit-sign">LIMIT<br><strong>50</strong></div>
+                            
+                            <!-- Stop Sign Element -->
+                            <div class="stop-sign-wrapper" id="stop-sign-wrapper">
+                                <div class="stop-sign" id="stop-sign">
+                                    <span class="stop-text">STOP</span>
+                                </div>
+                                <div class="stop-pole"></div>
+                                <div class="stop-line"></div>
+                            </div>
+
+                            <!-- Lead Vehicle (for tailgating sequence) -->
+                            <div class="lead-car-wrapper" id="lead-car-wrapper">
+                                <div class="lead-car" id="lead-car-element">
+                                    <span class="car-body">🚘</span>
+                                </div>
+                            </div>
+
+                            <!-- Proximity Radar line for Tailgating -->
+                            <div class="proximity-line" id="proximity-line">
+                                <span class="distance-radar" id="distance-radar">0.4m DANGER</span>
+                            </div>
+
+                            <!-- Primary Vehicle -->
+                            <div class="car-wrapper" id="car-wrapper">
+                                <div class="motion-blur" id="motion-blur"></div>
+                                <div class="car" id="car-element">
+                                    <span class="car-body" id="car-body">🚗</span>
+                                    <span class="helmet-icon" id="helmet-icon" title="Helmet Status">🪖</span>
+                                    <span class="seatbelt-icon" id="seatbelt-icon" title="Seatbelt Status">🔗</span>
+                                    <span class="violation-tag" id="violation-tag">ALERT</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. Target Violation Pipeline -->
+                <section class="glass-panel pipeline-section" aria-label="Target Sequence Pipeline">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span class="title-icon">🎯</span> Target Violation Pipeline
+                        </div>
+                        <span class="pipeline-status-badge" id="pipeline-overall-status">Searching Sequence</span>
+                    </div>
+                    
+                    <p class="pipeline-description">
+                        Required Consecutive Symbol Sequence: <strong id="pipeline-pattern-text" class="text-highlight">Red Light (R) → Speeding (S) → No Helmet (H)</strong>
+                    </p>
+
+                    <div class="pipeline-container" id="pipeline-container">
+                        <!-- Rendered dynamically in JS -->
+                    </div>
+                </section>
+
+                <!-- 3. DFA Visual Graph (Full Width) -->
+                <section class="glass-panel full-width dfa-graph-section" aria-label="DFA State Diagram">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span class="title-icon">⚡</span> Finite Automaton Visual State Graph
+                        </div>
+                        <div class="graph-legend">
+                            <span class="legend-item"><span class="dot dot-start"></span> Start State</span>
+                            <span class="legend-item"><span class="dot dot-active"></span> Current State</span>
+                            <span class="legend-item"><span class="dot dot-accept"></span> Accept State</span>
+                            <span class="legend-item"><span class="dot dot-reject"></span> Sequence Reset</span>
+                        </div>
+                    </div>
+                    
+                    <div class="dfa-container" id="dfa-container">
+                        <!-- SVG Overlay for Transition Edges -->
+                        <svg class="dfa-svg" id="dfa-svg">
+                            <defs>
+                                <marker id="arrow-default" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#00f3ff"/>
+                                </marker>
+                                <marker id="arrow-active" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#00ff88"/>
+                                </marker>
+                                <marker id="arrow-loop" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#ffb700"/>
+                                </marker>
+                                <filter id="glow">
+                                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                                    <feMerge>
+                                        <feMergeNode in="coloredBlur"/>
+                                        <feMergeNode in="SourceGraphic"/>
+                                    </feMerge>
+                                </filter>
+                            </defs>
+
+                            <!-- Dynamic SVG Edges Container -->
+                            <g id="svg-edges-group"></g>
+
+                            <!-- Animated Particle Travelling on Active Edge -->
+                            <circle id="particle" r="6" fill="#00ff88" opacity="0" filter="url(#glow)" />
+                        </svg>
+
+                        <!-- DFA Node Layer -->
+                        <div class="dfa-node-layer" id="dfa-node-layer">
+                            <!-- Rendered dynamically based on active pattern -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. Event Triggers & Custom Sequence Tester -->
+                <section class="glass-panel event-controls-section" aria-label="Manual Testing Controls">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span class="title-icon">🕹️</span> Manual Symbol Triggers & Batch Tester
+                        </div>
+                    </div>
+                    
+                    <p class="section-subtext">Click single event buttons to trigger DFA transitions manually:</p>
+
+                    <div class="manual-btn-grid" id="manual-btn-grid">
+                        <!-- Event buttons generated dynamically -->
+                    </div>
+
+                    <hr class="cyber-divider">
+
+                    <div class="custom-string-tester">
+                        <label for="custom-sequence-input" class="control-label">Batch String Evaluator:</label>
+                        <div class="input-with-button">
+                            <input type="text" id="custom-sequence-input" class="cyber-input" placeholder="e.g. R S H R S S H" value="R S H">
+                            <button id="run-custom-btn" class="btn btn-primary btn-sm">Evaluate String</button>
+                            <button id="load-preset-btn" class="btn btn-secondary btn-sm">Preset String</button>
+                        </div>
+                        <p class="input-hint">Type symbol tokens separated by space or comma (e.g. <code>R, S, H, X</code>)</p>
+                    </div>
+                </section>
+
+                <!-- 5. Real-time State & Console Logs -->
+                <section class="glass-panel status-console-section" aria-label="State & Execution Logs">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span class="title-icon">📊</span> State & Detection Console
+                        </div>
+                        <button id="clear-logs-btn" class="btn-text">Clear Console</button>
+                    </div>
+
+                    <div class="status-cards-grid">
+                        <div class="status-card" id="status-card">
+                            <div class="status-title">DFA STATUS</div>
+                            <div class="status-value" id="status-text">INITIALIZED</div>
+                            <div class="status-desc" id="status-sub">State: q0 (Start)</div>
+                        </div>
+
+                        <div class="status-card" id="current-state-card">
+                            <div class="status-title">ACTIVE STATE</div>
+                            <div class="status-value text-cyan" id="current-state-display">q0</div>
+                            <div class="status-desc" id="current-state-name">Clear / Initial</div>
+                        </div>
+                    </div>
+
+                    <div class="log-console-container">
+                        <div class="log-header">
+                            <span>EXECUTION LOG</span>
+                            <span id="log-count">1 Entry</span>
+                        </div>
+                        <div class="log-console" id="log-console">
+                            <div class="log-entry">
+                                <span class="log-step">[INIT]</span> DFA state machine ready at initial state <strong class="text-cyan">q0</strong>.
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 6. Educational Theoretical Masterclass -->
+                <section class="glass-panel full-width theory-section" aria-label="Formal Automaton Theory">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span class="title-icon">📖</span> Formal Automaton Definition & Transition Matrix
+                        </div>
+                    </div>
+                    
+                    <p class="theory-intro">
+                        A <strong>Deterministic Finite Automaton (DFA)</strong> is formally defined as a 5-tuple 
+                        <span class="math-expr">M = (Q, &Sigma;, &delta;, q<sub>0</sub>, F)</span>. 
+                        It processes input symbols sequentially from left to right, transitioning deterministically between finite states based on the transition function <span class="math-expr">&delta;</span>.
+                    </p>
+
+                    <div class="theory-grid">
+                        <!-- Formal 5-Tuple -->
+                        <div class="theory-card">
+                            <h4 class="theory-card-title">Formal 5-Tuple Specifications</h4>
+                            <ul class="formal-list" id="formal-tuple-list">
+                                <!-- Populated dynamically based on pattern -->
+                            </ul>
+                        </div>
+
+                        <!-- Transition Table -->
+                        <div class="theory-card">
+                            <h4 class="theory-card-title">Transition Matrix &delta;(q, &sigma;)</h4>
+                            <div class="table-responsive">
+                                <table class="transition-table" id="transition-table">
+                                    <thead id="transition-table-head">
+                                        <!-- Header populated dynamically -->
+                                    </thead>
+                                    <tbody id="transition-table-body">
+                                        <!-- Rows populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 7. Fine Summary & Driver Information -->
+                <section class="glass-panel fine-summary-section" aria-label="Fine Summary">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span class="title-icon">💰</span> Fine Summary
+                        </div>
+                    </div>
+                    <div class="fine-summary-hero">
+                        <div class="fine-hero-label">TOTAL FINE</div>
+                        <div class="fine-hero-amount" id="fine-summary-amount">₹0</div>
+                    </div>
+                    <div class="fine-stats-row">
+                        <div class="fine-stat-item">
+                            <span class="fine-stat-label">Total Fine</span>
+                            <span class="fine-stat-value" id="total-fine-display">₹0</span>
+                        </div>
+                        <div class="fine-stat-item">
+                            <span class="fine-stat-label">Violations</span>
+                            <span class="fine-stat-value text-violation-count" id="violation-count-display">0</span>
+                        </div>
+                    </div>
+                    <p class="fine-disclaimer">⚠️ Fine amounts shown are simulation/demo values and may not represent current legal penalties.</p>
+                </section>
+
+                <section class="glass-panel driver-info-section" aria-label="Driver Information">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span class="title-icon">🪪</span> Driver Information
+                        </div>
+                    </div>
+                    <div class="driver-info-grid">
+                        <div class="driver-info-item">
+                            <span class="driver-info-label">Driver ID</span>
+                            <span class="driver-info-value" id="driver-id-display">DRV-001</span>
+                        </div>
+                        <div class="driver-info-item">
+                            <span class="driver-info-label">Vehicle Number</span>
+                            <span class="driver-info-value" id="vehicle-num-display">MH-XX-1234</span>
+                        </div>
+                        <div class="driver-info-item">
+                            <span class="driver-info-label">Number of Violations</span>
+                            <span class="driver-info-value text-violation-count" id="driver-violation-count">0</span>
+                        </div>
+                        <div class="driver-info-item">
+                            <span class="driver-info-label">Total Fine</span>
+                            <span class="driver-info-value text-fine-amount" id="driver-total-fine">₹0</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 8. Violation History Table -->
+                <section class="glass-panel full-width violation-history-section" aria-label="Violation History">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span class="title-icon">📋</span> Violation History
+                        </div>
+                        <span class="pipeline-status-badge" id="history-badge">No Records</span>
+                    </div>
+                    <div class="violation-history-scroll">
+                        <table class="violation-history-table" id="violation-history-table">
+                            <thead>
+                                <tr>
+                                    <th>No.</th>
+                                    <th>Symbol</th>
+                                    <th>Violation</th>
+                                    <th>DFA State</th>
+                                    <th>Fine</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="violation-history-body">
+                                <!-- Rows populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+
+        <!-- Violation Alert Toast (fixed position) -->
+        <div id="violation-alert-toast" class="violation-alert-toast">
+            <div class="toast-icon">⚠️</div>
+            <div class="toast-content">
+                <div class="toast-title">TRAFFIC VIOLATION DETECTED</div>
+                <div class="toast-detail">Violation: <strong id="alert-violation-name">—</strong></div>
+                <div class="toast-detail">Fine: <strong id="alert-fine-amount">₹0</strong></div>
+                <div class="toast-detail">Status: <strong id="alert-status-text">—</strong></div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="main-footer">
+            <p>Traffic Violation Sequence Detector | Built with HTML5, CSS Glassmorphism & Pure Vanilla JavaScript</p>
+        </footer>
+    </div>
+
+    <!-- Help / Instructions Modal -->
+    <div id="help-modal" class="modal-backdrop hidden">
+        <div class="modal-box glass-panel">
+            <div class="modal-header">
+                <h3>📖 How to Use the DFA Traffic Simulator</h3>
+                <button id="close-modal-btn" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h4>Automaton Objective</h4>
+                <p>The DFA detects when a driver commits a specific sequence of traffic violations consecutively without resetting.</p>
+
+                <h4>Default Violation Sequence:</h4>
+                <ul>
+                    <li><strong>Step 1 (R):</strong> Driver runs a Red Light → State moves to <code>q1</code></li>
+                    <li><strong>Step 2 (S):</strong> Driver exceeds speed limit → State moves to <code>q2</code></li>
+                    <li><strong>Step 3 (H):</strong> Driver fails to wear a helmet → State moves to <code>q3 (ACCEPT State)</code></li>
+                </ul>
+
+                <h4>Key Features:</h4>
+                <ul>
+                    <li><strong>Run Target Violation:</strong> Automatically triggers the sequence <code>R → S → H</code> to view the full visual simulation.</li>
+                    <li><strong>Manual Triggers:</strong> Test individual events (R, S, H, or wrong events X) to observe state transitions and graph node illumination.</li>
+                    <li><strong>Pattern Switcher:</strong> Toggle between different violation patterns (e.g. Stop Sign → Illegal U-Turn).</li>
+                    <li><strong>Batch Evaluator:</strong> Enter any custom sequence of symbols to test DFA acceptance instantly.</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button id="modal-ok-btn" class="btn btn-primary">Got it!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script src="app.js"></script>
+</body>
+</html>
