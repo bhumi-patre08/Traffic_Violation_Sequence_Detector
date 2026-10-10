@@ -5,95 +5,87 @@
  */
 
 // --- 1. PATTERN CONFIGURATIONS ---
-const DFA_PATTERNS = {
+// --- 1. UNIFIED DFA & SCENARIO CONFIGURATIONS ---
+const UNIFIED_DFA = {
+    states: [
+        { id: 'q0', label: 'Start / Clear', isStart: true, isAccept: false, x: 10, y: 50 },
+        { id: 'q1', label: 'Red Light', isStart: false, isAccept: false, x: 38, y: 15 },
+        { id: 'q2', label: 'Red+Speed', isStart: false, isAccept: false, x: 65, y: 15 },
+        { id: 'q3', label: 'ACCEPT: R→S→H', isStart: false, isAccept: true, x: 92, y: 15 },
+        { id: 'q4', label: 'Stop Sign', isStart: false, isAccept: false, x: 45, y: 50 },
+        { id: 'q5', label: 'ACCEPT: T→U', isStart: false, isAccept: true, x: 80, y: 50 },
+        { id: 'q6', label: 'Speeding', isStart: false, isAccept: false, x: 38, y: 85 },
+        { id: 'q7', label: 'Speed+Weave', isStart: false, isAccept: false, x: 65, y: 85 },
+        { id: 'q8', label: 'ACCEPT: S→W→G', isStart: false, isAccept: true, x: 92, y: 85 }
+    ],
+    alphabet: [
+        { symbol: 'R', name: '🚦 Red Light', icon: '🚦' },
+        { symbol: 'S', name: '🏎️ Speeding', icon: '🏎️' },
+        { symbol: 'H', name: '🪖 No Helmet', icon: '🪖' },
+        { symbol: 'T', name: '🛑 Stop Ignored', icon: '🛑' },
+        { symbol: 'U', name: '↩️ Illegal U-Turn', icon: '↩️' },
+        { symbol: 'W', name: '🔀 Lane Weaving', icon: '🔀' },
+        { symbol: 'G', name: '🚗 Tailgating', icon: '🚗' },
+        { symbol: 'X', name: '❌ Other Event', icon: '❌' }
+    ],
+    initialState: 'q0',
+    acceptStates: ['q3', 'q5', 'q8'],
+    transitions: {
+        'q0': { 'R': 'q1', 'S': 'q6', 'H': 'q0', 'T': 'q4', 'U': 'q0', 'W': 'q0', 'G': 'q0', 'X': 'q0' },
+        'q1': { 'R': 'q1', 'S': 'q2', 'H': 'q0', 'T': 'q4', 'U': 'q0', 'W': 'q0', 'G': 'q0', 'X': 'q0' },
+        'q2': { 'R': 'q1', 'S': 'q6', 'H': 'q3', 'T': 'q4', 'U': 'q0', 'W': 'q7', 'G': 'q0', 'X': 'q0' },
+        'q3': { 'R': 'q1', 'S': 'q6', 'H': 'q0', 'T': 'q4', 'U': 'q0', 'W': 'q0', 'G': 'q0', 'X': 'q0' },
+        'q4': { 'R': 'q1', 'S': 'q6', 'H': 'q0', 'T': 'q4', 'U': 'q5', 'W': 'q0', 'G': 'q0', 'X': 'q0' },
+        'q5': { 'R': 'q1', 'S': 'q6', 'H': 'q0', 'T': 'q4', 'U': 'q0', 'W': 'q0', 'G': 'q0', 'X': 'q0' },
+        'q6': { 'R': 'q1', 'S': 'q6', 'H': 'q0', 'T': 'q4', 'U': 'q0', 'W': 'q7', 'G': 'q0', 'X': 'q0' },
+        'q7': { 'R': 'q1', 'S': 'q6', 'H': 'q0', 'T': 'q4', 'U': 'q0', 'W': 'q0', 'G': 'q8', 'X': 'q0' },
+        'q8': { 'R': 'q1', 'S': 'q6', 'H': 'q0', 'T': 'q4', 'U': 'q0', 'W': 'q0', 'G': 'q0', 'X': 'q0' }
+    },
+    edges: [
+        { from: 'q0', to: 'q1', label: 'R', type: 'forward' },
+        { from: 'q1', to: 'q2', label: 'S', type: 'forward' },
+        { from: 'q2', to: 'q3', label: 'H', type: 'forward' },
+        { from: 'q0', to: 'q4', label: 'T', type: 'forward' },
+        { from: 'q4', to: 'q5', label: 'U', type: 'forward' },
+        { from: 'q0', to: 'q6', label: 'S', type: 'forward' },
+        { from: 'q6', to: 'q7', label: 'W', type: 'forward' },
+        { from: 'q7', to: 'q8', label: 'G', type: 'forward' },
+        { from: 'q0', to: 'q0', label: 'Others', type: 'loop' },
+        { from: 'q1', to: 'q1', label: 'R', type: 'loop' },
+        { from: 'q6', to: 'q6', label: 'S', type: 'loop' }
+    ]
+};
+
+const SCENARIOS = {
     'red_speed_helmet': {
         name: 'Red Light → Speeding → No Helmet (Two-Wheeler)',
         vehicleType: 'two-wheeler',
         vehicleEmoji: '🏍️',
         targetSeq: ['R', 'S', 'H'],
         targetSeqText: 'Red Light (R) → Speeding (S) → No Helmet (H)',
-        states: [
-            { id: 'q0', label: 'Start / Clear', isStart: true, isAccept: false },
-            { id: 'q1', label: 'Red Light', isStart: false, isAccept: false },
-            { id: 'q2', label: '+ Speeding', isStart: false, isAccept: false },
-            { id: 'q3', label: 'ACCEPT (Violation)', isStart: false, isAccept: true }
-        ],
-        alphabet: [
-            { symbol: 'R', name: '🚦 Red Light', icon: '🚦' },
-            { symbol: 'S', name: '🏎️ Speeding', icon: '🏎️' },
-            { symbol: 'H', name: '🪖 No Helmet', icon: '🪖' },
-            { symbol: 'X', name: '❌ Other Event', icon: '❌' }
-        ],
-        initialState: 'q0',
-        acceptStates: ['q3'],
-        transitions: {
-            'q0': { 'R': 'q1', 'S': 'q0', 'H': 'q0', 'X': 'q0' },
-            'q1': { 'R': 'q1', 'S': 'q2', 'H': 'q0', 'X': 'q0' },
-            'q2': { 'R': 'q1', 'S': 'q0', 'H': 'q3', 'X': 'q0' },
-            'q3': { 'R': 'q1', 'S': 'q0', 'H': 'q0', 'X': 'q0' }
-        },
         pipeline: [
             { symbol: 'R', text: 'Red Light', icon: '🚦' },
             { symbol: 'S', text: 'Speeding', icon: '🏎️' },
             { symbol: 'H', text: 'No Helmet', icon: '🪖' }
         ]
     },
-
     'stop_uturn': {
         name: 'Stop Sign Ignored → Illegal U-Turn (Four-Wheeler)',
         vehicleType: 'four-wheeler',
         vehicleEmoji: '🚗',
         targetSeq: ['T', 'U'],
         targetSeqText: 'Stop Sign Ignored (T) → Illegal U-Turn (U)',
-        states: [
-            { id: 'q0', label: 'Start / Clear', isStart: true, isAccept: false },
-            { id: 'q1', label: 'Stop Sign Ignored', isStart: false, isAccept: false },
-            { id: 'q2', label: 'ACCEPT (Violation)', isStart: false, isAccept: true }
-        ],
-        alphabet: [
-            { symbol: 'T', name: '🛑 Stop Ignored', icon: '🛑' },
-            { symbol: 'U', name: '↩️ Illegal U-Turn', icon: '↩️' },
-            { symbol: 'X', name: '❌ Other Event', icon: '❌' }
-        ],
-        initialState: 'q0',
-        acceptStates: ['q2'],
-        transitions: {
-            'q0': { 'T': 'q1', 'U': 'q0', 'X': 'q0' },
-            'q1': { 'T': 'q1', 'U': 'q2', 'X': 'q0' },
-            'q2': { 'T': 'q1', 'U': 'q0', 'X': 'q0' }
-        },
         pipeline: [
             { symbol: 'T', text: 'Stop Ignored', icon: '🛑' },
             { symbol: 'U', text: 'Illegal U-Turn', icon: '↩️' }
         ]
     },
-
     'speed_weaving': {
         name: 'Speeding → Lane Weaving → Tailgating (Four-Wheeler)',
         vehicleType: 'four-wheeler',
         vehicleEmoji: '🚗',
         targetSeq: ['S', 'W', 'G'],
         targetSeqText: 'Speeding (S) → Lane Weaving (W) → Tailgating (G)',
-        states: [
-            { id: 'q0', label: 'Start / Clear', isStart: true, isAccept: false },
-            { id: 'q1', label: 'Speeding', isStart: false, isAccept: false },
-            { id: 'q2', label: '+ Lane Weaving', isStart: false, isAccept: false },
-            { id: 'q3', label: 'ACCEPT (Reckless)', isStart: false, isAccept: true }
-        ],
-        alphabet: [
-            { symbol: 'S', name: '🏎️ Speeding', icon: '🏎️' },
-            { symbol: 'W', name: '🔀 Lane Weaving', icon: '🔀' },
-            { symbol: 'G', name: '🚗 Tailgating', icon: '🚗' },
-            { symbol: 'X', name: '❌ Normal Driving', icon: '❌' }
-        ],
-        initialState: 'q0',
-        acceptStates: ['q3'],
-        transitions: {
-            'q0': { 'S': 'q1', 'W': 'q0', 'G': 'q0', 'X': 'q0' },
-            'q1': { 'S': 'q1', 'W': 'q2', 'G': 'q0', 'X': 'q0' },
-            'q2': { 'S': 'q1', 'W': 'q0', 'G': 'q3', 'X': 'q0' },
-            'q3': { 'S': 'q1', 'W': 'q0', 'G': 'q0', 'X': 'q0' }
-        },
         pipeline: [
             { symbol: 'S', text: 'Speeding', icon: '🏎️' },
             { symbol: 'W', text: 'Lane Weaving', icon: '🔀' },
@@ -200,7 +192,8 @@ const audioFX = new SoundController();
 // --- 3. APPLICATION STATE ---
 const AppState = {
     currentPatternKey: 'red_speed_helmet',
-    activePattern: DFA_PATTERNS['red_speed_helmet'],
+    activeScenario: SCENARIOS['red_speed_helmet'],
+    dfa: UNIFIED_DFA,
     currentState: 'q0',
     stepHistory: [],
     isSimulating: false,
@@ -312,8 +305,8 @@ function initApp() {
 
 function loadPattern(patternKey) {
     AppState.currentPatternKey = patternKey;
-    AppState.activePattern = DFA_PATTERNS[patternKey];
-    AppState.currentState = AppState.activePattern.initialState;
+    AppState.activeScenario = SCENARIOS[patternKey];
+    AppState.currentState = AppState.dfa.initialState;
     AppState.stepCount = 0;
     AppState.stepHistory = [];
     stopAutoPlay();
@@ -334,10 +327,10 @@ function loadPattern(patternKey) {
 
 // Pipeline Cards Renderer
 function renderPipelineCards() {
-    elements.pipelinePatternText.textContent = AppState.activePattern.targetSeqText;
+    elements.pipelinePatternText.textContent = AppState.activeScenario.targetSeqText;
     elements.pipelineContainer.innerHTML = '';
 
-    AppState.activePattern.pipeline.forEach((item, idx) => {
+    AppState.activeScenario.pipeline.forEach((item, idx) => {
         const card = document.createElement('div');
         card.className = `pipeline-card ${idx === 0 ? 'active-step' : ''}`;
         card.id = `pipe-card-${idx}`;
@@ -347,7 +340,7 @@ function renderPipelineCards() {
         `;
         elements.pipelineContainer.appendChild(card);
 
-        if (idx < AppState.activePattern.pipeline.length - 1) {
+        if (idx < AppState.activeScenario.pipeline.length - 1) {
             const arrow = document.createElement('span');
             arrow.className = 'pipeline-arrow';
             arrow.textContent = '→';
@@ -364,10 +357,13 @@ function renderPipelineCards() {
 function renderDFANodes() {
     elements.dfaNodeLayer.innerHTML = '';
 
-    AppState.activePattern.states.forEach((state) => {
+    AppState.dfa.states.forEach((state) => {
         const node = document.createElement('div');
         node.className = `dfa-node ${state.isAccept ? 'accept-state' : ''} ${state.id === AppState.currentState ? 'active' : ''}`;
         node.id = `node-${state.id}`;
+        
+        node.style.left = `${state.x}%`;
+        node.style.top = `${state.y}%`;
 
         node.innerHTML = `
             <span class="current-badge">CURRENT</span>
@@ -388,7 +384,7 @@ function renderDFANodes() {
 function renderManualButtons() {
     elements.manualBtnGrid.innerHTML = '';
 
-    AppState.activePattern.alphabet.forEach(item => {
+    AppState.dfa.alphabet.forEach(item => {
         const btn = document.createElement('button');
         btn.className = 'btn btn-action';
         btn.innerHTML = `${item.icon} ${item.name} (${item.symbol})`;
@@ -402,7 +398,7 @@ function renderManualButtons() {
 
 // Theory Section & Transition Matrix Renderer
 function renderTheorySection() {
-    const pattern = AppState.activePattern;
+    const pattern = AppState.dfa;
 
     // 1. 5-Tuple List
     const stateIds = pattern.states.map(s => s.id).join(', ');
@@ -457,10 +453,7 @@ function updateSVGEdges() {
     const svgRect = svg.getBoundingClientRect();
     if (svgRect.width === 0) return;
 
-    const pattern = AppState.activePattern;
-    const states = pattern.states;
-
-    const getNodeCenter = (stateId) => {
+    window.getNodeCenter = (stateId) => {
         const el = document.getElementById(`node-${stateId}`);
         if (!el) return { x: 0, y: 0 };
         const r = el.getBoundingClientRect();
@@ -471,61 +464,105 @@ function updateSVGEdges() {
     };
 
     const nodeRadius = 36;
+    const pattern = AppState.dfa;
 
-    // Build straight edges between consecutive linear state nodes
-    for (let i = 0; i < states.length - 1; i++) {
-        const fromState = states[i].id;
-        const toState = states[i + 1].id;
-        const p1 = getNodeCenter(fromState);
-        const p2 = getNodeCenter(toState);
-
-        const targetSymbol = pattern.targetSeq[i] || '';
-
-        const dx = p2.x - p1.x;
-        const dy = p2.y - p1.y;
-        const angle = Math.atan2(dy, dx);
-
-        const sx = p1.x + nodeRadius * Math.cos(angle);
-        const sy = p1.y + nodeRadius * Math.sin(angle);
-        const ex = p2.x - nodeRadius * Math.cos(angle);
-        const ey = p2.y - nodeRadius * Math.sin(angle);
-
-        const pathId = `edge-${fromState}-${toState}`;
+    pattern.edges.forEach(edge => {
+        const p1 = window.getNodeCenter(edge.from);
+        const p2 = window.getNodeCenter(edge.to);
+        const pathId = `edge-${edge.from}-${edge.to}`;
 
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttribute('id', pathId);
-        path.setAttribute('d', `M ${sx} ${sy} L ${ex} ${ey}`);
-        path.setAttribute('stroke', 'rgba(0, 243, 255, 0.4)');
+        
+        let d = '';
+        let textX = 0, textY = 0;
+
+        if (edge.type === 'loop') {
+            const cx = p1.x;
+            const cy = p1.y - nodeRadius;
+            d = `M ${p1.x - 10} ${p1.y - nodeRadius + 5} C ${p1.x - 40} ${p1.y - nodeRadius - 40}, ${p1.x + 40} ${p1.y - nodeRadius - 40}, ${p1.x + 10} ${p1.y - nodeRadius + 5}`;
+            textX = cx;
+            textY = cy - 25;
+        } else if (edge.type === 'curve') {
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const cx = p1.x + dx / 2;
+            const cy = p1.y + dy / 2 - 50; 
+            
+            const angle1 = Math.atan2(cy - p1.y, cx - p1.x);
+            const angle2 = Math.atan2(p2.y - cy, p2.x - cx);
+            
+            const sx = p1.x + nodeRadius * Math.cos(angle1);
+            const sy = p1.y + nodeRadius * Math.sin(angle1);
+            const ex = p2.x - nodeRadius * Math.cos(angle2);
+            const ey = p2.y - nodeRadius * Math.sin(angle2);
+            
+            d = `M ${sx} ${sy} Q ${cx} ${cy} ${ex} ${ey}`;
+            textX = cx;
+            textY = cy - 10;
+        } else {
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const angle = Math.atan2(dy, dx);
+            const sx = p1.x + nodeRadius * Math.cos(angle);
+            const sy = p1.y + nodeRadius * Math.sin(angle);
+            const ex = p2.x - nodeRadius * Math.cos(angle);
+            const ey = p2.y - nodeRadius * Math.sin(angle);
+            
+            d = `M ${sx} ${sy} L ${ex} ${ey}`;
+            textX = (sx + ex) / 2;
+            textY = (sy + ey) / 2 - 10;
+        }
+
+        path.setAttribute('d', d);
+        path.setAttribute('stroke', 'rgba(0, 243, 255, 0.3)');
         path.setAttribute('stroke-width', '2.5');
         path.setAttribute('fill', 'none');
-        path.setAttribute('marker-end', 'url(#arrow-default)');
+        path.setAttribute('marker-end', edge.type === 'loop' ? 'url(#arrow-loop)' : 'url(#arrow-default)');
         group.appendChild(path);
 
-        // Edge text label
         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        text.setAttribute('x', (sx + ex) / 2);
-        text.setAttribute('y', (sy + ey) / 2 - 12);
+        text.setAttribute('x', textX);
+        text.setAttribute('y', textY);
         text.setAttribute('fill', 'var(--text-muted)');
         text.setAttribute('font-size', '12');
+        text.setAttribute('font-weight', '600');
         text.setAttribute('font-family', 'var(--font-code)');
         text.setAttribute('text-anchor', 'middle');
-        text.textContent = `${targetSymbol}`;
+        text.textContent = edge.label;
         group.appendChild(text);
-    }
+    });
 }
 
 // Animate glowing particle travelling along edge path
 function animateEdgeParticle(fromState, toState, duration = 800) {
-    const pathId = `edge-${fromState}-${toState}`;
-    const path = document.getElementById(pathId);
-    if (!path) return;
+    let pathId = `edge-${fromState}-${toState}`;
+    let path = document.getElementById(pathId);
+    let tempPath = false;
+
+    if (!path) {
+        // Create a temporary dashed path for transitions not statically drawn
+        const svg = elements.dfaSvg;
+        const group = elements.svgEdgesGroup;
+        const p1 = window.getNodeCenter(fromState);
+        const p2 = window.getNodeCenter(toState);
+        
+        path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('id', pathId);
+        path.setAttribute('d', `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y}`);
+        path.setAttribute('stroke', 'rgba(255, 0, 85, 0.4)');
+        path.setAttribute('stroke-dasharray', '5,5');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('fill', 'none');
+        group.appendChild(path);
+        tempPath = true;
+    }
 
     const particle = elements.particle;
     const pathLen = path.getTotalLength();
-
     particle.setAttribute('opacity', '1');
-
     const startTime = performance.now();
+
     function step(now) {
         const elapsed = now - startTime;
         const progress = Math.min(elapsed / duration, 1);
@@ -538,6 +575,9 @@ function animateEdgeParticle(fromState, toState, duration = 800) {
             requestAnimationFrame(step);
         } else {
             particle.setAttribute('opacity', '0');
+            if (tempPath) {
+                path.remove();
+            }
         }
     }
     requestAnimationFrame(step);
@@ -548,7 +588,7 @@ function animateEdgeParticle(fromState, toState, duration = 800) {
 function processSymbol(inputSymbol, labelName = '') {
     AppState.stepCount++;
     const prev = AppState.currentState;
-    const pattern = AppState.activePattern;
+    const pattern = AppState.dfa;
     const next = pattern.transitions[prev]?.[inputSymbol] || pattern.initialState;
     const isAccepted = pattern.acceptStates.includes(next);
 
@@ -635,7 +675,7 @@ function updateRoadVisuals(symbol) {
     const leadCarWrapper = elements.leadCarWrapper;
     const proximityLine = elements.proximityLine;
 
-    const pattern = AppState.activePattern;
+    const pattern = AppState.activeScenario;
     const patternKey = AppState.currentPatternKey;
 
     // Reset visual dynamic classes & tags
@@ -778,11 +818,11 @@ function updateDFAHighlights(prev, next, symbol) {
     }
 
     elements.currentStateDisplay.textContent = next;
-    const stateObj = AppState.activePattern.states.find(s => s.id === next);
+    const stateObj = AppState.dfa.states.find(s => s.id === next);
     elements.currentStateName.textContent = stateObj ? stateObj.label : next;
 
     // Reject shake effect if non-advancing input resets to q0
-    if (prev !== 'q0' && next === 'q0' && symbol !== AppState.activePattern.targetSeq[0]) {
+    if (prev !== 'q0' && next === 'q0' && symbol !== AppState.activeScenario.targetSeq[0]) {
         const prevNode = document.getElementById(`node-${prev}`);
         if (prevNode) prevNode.classList.add('rejected');
     }
@@ -790,7 +830,7 @@ function updateDFAHighlights(prev, next, symbol) {
 
 // Pipeline Card States
 function updatePipelineCards(currentState) {
-    const targetSeq = AppState.activePattern.targetSeq;
+    const targetSeq = AppState.activeScenario.targetSeq;
     const cards = document.querySelectorAll('.pipeline-card');
     cards.forEach(c => c.classList.remove('completed', 'active-step', 'accepted-step'));
 
@@ -801,7 +841,7 @@ function updatePipelineCards(currentState) {
         if (cards[0]) cards[0].classList.add('completed');
         if (cards[1]) cards[1].classList.add('completed');
         if (cards[2]) cards[2].classList.add('active-step');
-    } else if (currentState === 'q3' || AppState.activePattern.acceptStates.includes(currentState)) {
+    } else if (currentState === 'q3' || AppState.dfa.acceptStates.includes(currentState)) {
         cards.forEach(c => c.classList.add('accepted-step'));
         elements.pipelineOverallStatus.textContent = '✓ SEQUENCE MATCHED';
         elements.pipelineOverallStatus.style.borderColor = 'var(--green-accept)';
@@ -896,13 +936,13 @@ function runTargetViolationSequence() {
     AppState.isSimulating = true;
     toggleControlsDisabled(true);
 
-    const seq = AppState.activePattern.targetSeq;
+    const seq = AppState.activeScenario.targetSeq;
     let index = 0;
 
     AppState.autoPlayTimer = setInterval(() => {
         if (index < seq.length) {
             const sym = seq[index];
-            const alphaObj = AppState.activePattern.alphabet.find(a => a.symbol === sym);
+            const alphaObj = AppState.dfa.alphabet.find(a => a.symbol === sym);
             processSymbol(sym, alphaObj ? alphaObj.name : sym);
             index++;
         } else {
@@ -914,10 +954,10 @@ function runTargetViolationSequence() {
 function stepForward() {
     if (AppState.isSimulating) return;
 
-    const seq = AppState.activePattern.targetSeq;
+    const seq = AppState.activeScenario.targetSeq;
     const currentStepIdx = AppState.stepHistory.length % seq.length;
     const sym = seq[currentStepIdx];
-    const alphaObj = AppState.activePattern.alphabet.find(a => a.symbol === sym);
+    const alphaObj = AppState.dfa.alphabet.find(a => a.symbol === sym);
 
     AppState.stepHistory.push(sym);
     processSymbol(sym, alphaObj ? alphaObj.name : sym);
@@ -938,7 +978,7 @@ function evaluateCustomString(inputStr) {
     AppState.autoPlayTimer = setInterval(() => {
         if (index < symbols.length) {
             const sym = symbols[index];
-            const alphaObj = AppState.activePattern.alphabet.find(a => a.symbol === sym);
+            const alphaObj = AppState.dfa.alphabet.find(a => a.symbol === sym);
             processSymbol(sym, alphaObj ? alphaObj.name : `Symbol ${sym}`);
             index++;
         } else {
@@ -960,18 +1000,18 @@ function resetUIState() {
     stopAutoPlay();
     audioFX.playReset();
 
-    AppState.currentState = AppState.activePattern.initialState;
+    AppState.currentState = AppState.dfa.initialState;
     AppState.stepCount = 0;
     AppState.stepHistory = [];
 
     // Reset DFA Nodes
     const nodes = document.querySelectorAll('.dfa-node');
     nodes.forEach(n => n.classList.remove('active', 'rejected'));
-    const startNode = document.getElementById(`node-${AppState.activePattern.initialState}`);
+    const startNode = document.getElementById(`node-${AppState.dfa.initialState}`);
     if (startNode) startNode.classList.add('active');
 
     // Reset Pipeline
-    updatePipelineCards(AppState.activePattern.initialState);
+    updatePipelineCards(AppState.dfa.initialState);
 
     // Reset Road
     elements.eventBannerText.textContent = 'STATUS: MONITORING TRAFFIC FLOW';
@@ -981,7 +1021,7 @@ function resetUIState() {
     elements.violationTag.style.display = 'none';
 
     // Set vehicle emoji based on pattern type
-    const pattern = AppState.activePattern;
+    const pattern = AppState.activeScenario;
     if (elements.carBody) {
         elements.carBody.textContent = pattern.vehicleEmoji || '🚗';
     }
@@ -1015,8 +1055,8 @@ function resetUIState() {
     // Reset Status Cards & Matrix highlights
     elements.statusCard.classList.remove('accept', 'reject');
     elements.statusText.textContent = 'INITIALIZED';
-    elements.statusSub.textContent = `State: ${AppState.activePattern.initialState}`;
-    elements.currentStateDisplay.textContent = AppState.activePattern.initialState;
+    elements.statusSub.textContent = `State: ${AppState.dfa.initialState}`;
+    elements.currentStateDisplay.textContent = AppState.dfa.initialState;
     elements.currentStateName.textContent = 'Clear / Initial';
 
     document.querySelectorAll('.transition-table tr').forEach(r => r.classList.remove('active-row'));
@@ -1025,7 +1065,7 @@ function resetUIState() {
     // Clear log console
     elements.logConsole.innerHTML = `
         <div class="log-entry">
-            <span class="log-step">[SYSTEM RESET]</span> DFA reset to initial state <strong>${AppState.activePattern.initialState}</strong>.
+            <span class="log-step">[SYSTEM RESET]</span> DFA reset to initial state <strong>${AppState.dfa.initialState}</strong>.
         </div>
     `;
     elements.logCount.textContent = '1 Entry';
@@ -1141,7 +1181,7 @@ function showViolationAlertToast(violationName, fineAmount) {
 // --- 11. OVERLAYS & CANVAS CONFETTI ---
 
 function triggerViolationOverlay() {
-    elements.overlaySeqText.textContent = AppState.activePattern.targetSeqText;
+    elements.overlaySeqText.textContent = AppState.activeScenario.targetSeqText;
     // Update overlay with fine info
     const overlayBadge = document.querySelector('.violation-badge');
     if (overlayBadge) {
